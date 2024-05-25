@@ -39,7 +39,7 @@ def evaluate(state: np.ndarray):
 
     diag_s1 = np.diag(s).sum()
     diag_s2 = np.flipud(s).diagonal().sum()
-    if 3 == [diag_s1, diag_s2]:
+    if 3 in [diag_s1, diag_s2]:
         return 1
     elif -3 in [diag_s1, diag_s2]:
         return -1
@@ -57,6 +57,7 @@ def make_move(
     player: int,
     at: int
 ) -> np.ndarray:
+    assert evaluate(state) is None
     assert state[at] == 0
     state[at] = player
     return state
@@ -73,5 +74,5 @@ if __name__ == "__main__":
     state = np.array([-1, 0, -1, 0, -1, 0, 1, 1, 0])
     draw_board(state)
     print(get_valid_moves(state))
-    draw_board(make_move(state, -1, 8))
+    draw_board(make_move(state.copy(), -1, 8))
     print(evaluate(state))

@@ -12,18 +12,19 @@ def _get_mcts_policy(root: Node) -> np.ndarray:
     return policy / sum(policy)
 
 
-def _assign_rewards(examples: list, winner: int, reward: float) -> list:
-    for ex in examples:
-        if ex[1] == winner:
-            ex[4] = reward
-        else:
-            ex[4] = - reward
+def _assign_rewards(examples: list, _eval: int) -> list:
+    if _eval != 0:
+        for ex in examples:
+            if ex[1] == _eval:
+                ex[4] = 1.0
+            else:
+                ex[4] = - 1.0
 
     # let's also `sample` and `unroll` here
     n = len(examples)
     unroll_from = np.random.randint(0, n - 1)
 
-    return examples[unroll_from:]
+    return examples[unroll_from: unroll_from + 5]
 
 
 def generate_replay_buffer(
@@ -65,15 +66,32 @@ def generate_replay_buffer(
                 player,
                 improved_policy,
                 action,
-                None
+                0  # will be updated in `_assign_rewards`
             ])
 
             state = make_move(state.copy(), player, action)
             player = player * -1
 
-        examples = _assign_rewards(examples, player * -1, evaluate(state))
+        examples = _assign_rewards(examples, evaluate(state))
         replay_buffer += [examples]
 
+    return replay_buffer
+
+
+def make_targets(replay_buffer: list) -> list:
+    for g in replay_buffer:
+        state = g[-1][0]
+        player = g[-1][1]
+        action = g[-1][3]
+        state = make_move(state.copy(), player, action)
+        while len(g) < 5:
+            g.append([
+                state,
+                player * -1,
+                np.array([1/9] * 9),  # uniform
+                np.random.choice(9),
+                0
+            ])
     return replay_buffer
 
 
@@ -83,13 +101,16 @@ if __name__ == "__main__":
     rnet = ReprNet()
 
     rb = generate_replay_buffer(
-        pnet, dnet, rnet, 2
+        pnet, dnet, rnet, 5
     )
+
+    rb = make_targets(rb)
 
     for b in rb:
         for c in b:
             draw_board(c[0])
             print("player:", c[1])
             print("policy:", c[2])
+            print("action:", c[3])
             print("reward:", c[-1])
         print("--------------------------------------------")
