@@ -59,8 +59,8 @@ def init_root(
     node.visit_count = 0
     node.expand(dnet)
     policy, value = pnet.predict(node.hs)
-    node.value = value
-    node.policy = mask_illegal_moves(node.state, torch.exp(policy))
+    node.value = value[0]
+    node.policy = mask_illegal_moves(node.state, torch.exp(policy)[0])
     return node
 
 
@@ -76,8 +76,8 @@ def search(
         node.visit_count = 0
         node.expand(dnet)
         policy, value = pnet.predict(node.hs)
-        node.policy = torch.exp(policy)
-        return value
+        node.policy = torch.exp(policy)[0]
+        return value[0]
 
     max_u = -float("inf")
     best_move = None
@@ -125,9 +125,9 @@ if __name__ == "__main__":
     dnet = DynmNet()
     rnet = ReprNet()
 
-    state = np.array([0, 0, 0, 0, 0, 0, ])
+    state = np.array([1, 0, 0, -1, 0, 0, 1, 0, -1])
     draw_board(state)
-    player = -1
+    player = 1
 
     inp = rnet_input(state, player)
     hs = rnet.predict(inp)
@@ -142,8 +142,8 @@ if __name__ == "__main__":
 
     print(node.value)
     print([node.children[i].value for i in range(9)])
-    print([node.children[5].children[i].value for i in range(9)])
+    print([node.children[1].children[i].value for i in range(9)])
 
     print(node.visit_count)
     print([node.children[i].visit_count for i in range(9)])
-    print([node.children[5].children[i].visit_count for i in range(9)])
+    print([node.children[1].children[i].visit_count for i in range(9)])

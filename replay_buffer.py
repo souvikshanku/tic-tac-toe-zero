@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import trange
 
 from game import evaluate, make_move, draw_board
 from mcts import Node, backprop, init_root, search
@@ -39,7 +40,7 @@ def generate_replay_buffer(
     replay_buffer = []
     num_sims = 10
 
-    for _ in range(num_episodes):
+    for _ in trange(num_episodes):
         examples = []
         state = np.zeros(9)
         player = 1

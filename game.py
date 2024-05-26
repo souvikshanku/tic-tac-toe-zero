@@ -59,6 +59,11 @@ def make_move(
 ) -> np.ndarray:
     assert evaluate(state) is None
     assert state[at] == 0
+    if player == 1:
+        assert np.sum(state) == 0
+    else:
+        assert np.sum(state) == 1
+
     state[at] = player
     return state
 

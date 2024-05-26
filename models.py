@@ -81,4 +81,4 @@ class PredNet(nn.Module):
         with torch.no_grad():
             policy, value = self.forward(hidden_state)
 
-        return policy[0], value[0]
+        return policy, value
