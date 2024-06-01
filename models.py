@@ -7,14 +7,14 @@ class ReprNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-        self.inp_dim = 21
+        self.inp_dim = 81
         self.hs_dim = 9
 
-        self.fc1 = nn.Linear(self.inp_dim, 16)
-        self.fc2 = nn.Linear(16, self.hs_dim)
+        self.fc1 = nn.Linear(self.inp_dim, 256)
+        self.fc2 = nn.Linear(256, self.hs_dim)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = F.elu(self.fc1(x))
         x = F.tanh(self.fc2(x))
         return x
 
@@ -32,13 +32,13 @@ class DynmNet(nn.Module):
         self.inp_dim = 18
         self.hs_dim = 9
 
-        self.fc1 = nn.Linear(self.inp_dim, 32)
-        self.fc2 = nn.Linear(32, 32)
-        self.fc3 = nn.Linear(32, self.hs_dim)
+        self.fc1 = nn.Linear(self.inp_dim, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, self.hs_dim)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.elu(self.fc1(x))
+        x = F.elu(self.fc2(x))
         x = F.tanh(self.fc3(x))
         return x
 
@@ -67,10 +67,10 @@ class PredNet(nn.Module):
     def forward(self, x):
         x = x.view(-1, self.inp_dim)
 
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        x = F.elu(self.fc1(x))
+        x = F.elu(self.fc2(x))
+        x = F.elu(self.fc3(x))
+        x = F.elu(self.fc4(x))
 
         pi = self.fc5(x)
         v = self.fc6(x)

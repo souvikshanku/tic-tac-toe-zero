@@ -16,40 +16,37 @@ from utils import rnet_input
 
 
 def _pit_nns(
-    hnets1: list,
-    hnets2: list,
+    nets1: list,
+    nets2: list,
     num_episodes: int = 20,
-    # argmax: bool = False
 ) -> float:
-    num_sims = 10
+    num_sims = 18
     num_wins = 0
     num_draws = 0
     win_as_O = 0
     win_as_X = 0
 
-    def player_hnets(player: int, episode_count: int) -> list:
+    def player_nets(player: int, episode_count: int) -> list:
         # play as black in the first half
         if episode_count < num_episodes / 2:
             if player == 1:
-                return hnets1
+                return nets1
             else:
-                return hnets2
+                return nets2
         # play as white in the second half
         elif player == 1:
-            return hnets2
+            return nets2
         else:
-            return hnets1
+            return nets1
 
     for i in trange(num_episodes, ascii=' >='):
         state = np.zeros(9)
         player = 1
+        trajectory = [state]
 
         while True:
-            # draw_board(state)
-            # print(player)
-
-            dnet, pnet, rnet = player_hnets(player, i)
-            inp = rnet_input(state, player)
+            dnet, pnet, rnet = player_nets(player, i)
+            inp = rnet_input(trajectory, player)
             hs = rnet.predict(inp)
             node = Node(hs, state, is_root=True, to_play=True)
             node = init_root(node, dnet, pnet)
@@ -60,11 +57,31 @@ def _pit_nns(
                 backprop(reward, path)
 
             improved_policy = _get_mcts_policy(node)
+
             action = np.random.choice(
                 range(len(improved_policy)),
                 p=improved_policy
             )
+            # if i < num_episodes / 2:
+            #     if player == -1:
+            #         action = np.argmax(improved_policy)
+            #     else:
+            #         action = np.random.choice(
+            #             range(len(improved_policy)),
+            #             p=improved_policy
+            #         )
+
+            # else:
+            #     if player == 1:
+            #         action = np.argmax(improved_policy)
+            #     else:
+            #         action = np.random.choice(
+            #             range(len(improved_policy)),
+            #             p=improved_policy
+            #         )
+
             state = make_move(state.copy(), player, action)
+            trajectory.append(state)
 
             if evaluate(state) is not None:
                 if evaluate(state) == 0:
@@ -84,14 +101,15 @@ def _pit_nns(
     print("Total Wins: ", num_wins)
     print("Total Draws: ", num_draws)
 
-    return num_wins / num_episodes
+    return (num_wins + num_draws) / num_episodes
 
 
 def learn_by_self_play(num_iters: int):
-    num_games = 1536
+    num_games = 300
     num_episodes = 40
-    num_epochs = 256
-    threshold = 0.5
+    num_epochs = 200
+    batch_size = 128
+    threshold = 0.55
 
     pnet = PredNet()
     dnet = DynmNet()
@@ -114,16 +132,17 @@ def learn_by_self_play(num_iters: int):
             pnet_t,
             rnet_t,
             games,
-            num_epochs
+            num_epochs,
+            batch_size
         )
 
         print("Playing against older self...")
-        frac_win = _pit_nns(
+        frac = _pit_nns(
             [dnet, pnet, rnet],
             [dnet_t, pnet_t, rnet_t],
             num_episodes
         )
-        print("frac_win: ", frac_win,)
+        print("frac: ", frac,)
 
         torch.save({
             "iter": i,
@@ -138,9 +157,9 @@ def learn_by_self_play(num_iters: int):
             [dnet_t, pnet_t, rnet_t]
         )
 
-        print("------------------------------")
+        print("---------------------------------------------")
 
-        if frac_win > threshold:
+        if frac >= threshold:
             dnet, pnet, rnet = dnet_t, pnet_t, rnet_t
             games = []
 
@@ -152,7 +171,7 @@ if __name__ == "__main__":
     dnet = DynmNet()
     rnet = ReprNet()
 
-    dnet_t, pnet_t, rnet_t = learn_by_self_play(16)
+    dnet_t, pnet_t, rnet_t = learn_by_self_play(50)
 
     _pit_nns([dnet, pnet, rnet], [dnet_t, pnet_t, rnet_t])
 

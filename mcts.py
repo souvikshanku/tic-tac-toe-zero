@@ -8,9 +8,8 @@ from utils import dnet_input, rnet_input
 
 def mask_illegal_moves(
     state: np.ndarray,
-    policy: torch.Tensor,
+    policy: np.ndarray,
 ) -> np.ndarray:
-    policy = policy.detach().numpy().copy()
     valid_moves = get_valid_moves(state)
     for idx in range(9):
         if idx not in valid_moves:
@@ -53,14 +52,22 @@ class Node:
 def init_root(
     node: Node,
     dnet: DynmNet,
-    pnet: PredNet
+    pnet: PredNet,
+    noise: bool = False
 ) -> Node:
     node.visited = True
     node.visit_count = 0
     node.expand(dnet)
+
     policy, value = pnet.predict(node.hs)
     node.value = value[0]
-    node.policy = mask_illegal_moves(node.state, torch.exp(policy)[0])
+
+    policy = torch.exp(policy)[0].detach().numpy().copy()
+    if noise:
+        noise = np.random.dirichlet([0.3] * len(policy))
+    policy = noise * 0.25 + (1 - 0.25) * policy
+    node.policy = mask_illegal_moves(node.state, policy)
+
     return node
 
 
@@ -87,7 +94,10 @@ def search(
         Psa = node.policy[m]
         Nsa = node.children[m].visit_count
 
-        u = Qsa + 1 * Psa * np.sqrt(node.visit_count) / (1 + Nsa)
+        # u = Qsa + 1 * Psa * np.sqrt(node.visit_count) / (1 + Nsa)
+        c1 = 1.25
+        c2 = 19652
+        u = Qsa + Psa * (np.sqrt(node.visit_count) / (1 + Nsa)) * (c1 + np.log((node.visit_count + c2 + 1) / c2))  # noqa
 
         if node.parent is None:  # i.e., the root node
             if node.policy[m] == 0.0:
@@ -96,11 +106,6 @@ def search(
         if u > max_u:
             max_u = u
             best_move = m
-
-    # if best_move is None:
-    #     from game import draw_board
-    #     draw_board(node.state)
-    #     print(player)
 
     child: Node = node.children[best_move]
     path.append(child)
@@ -147,3 +152,4 @@ if __name__ == "__main__":
     print(node.visit_count)
     print([node.children[i].visit_count for i in range(9)])
     print([node.children[1].children[i].visit_count for i in range(9)])
+    print(node.policy)
