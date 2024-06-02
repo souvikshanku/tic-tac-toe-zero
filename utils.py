@@ -18,8 +18,8 @@ def rnet_input(trajectory: list, player: int) -> torch.Tensor:
         w_b = np.concatenate((w, b), axis=0).flatten()
         inp = np.append(inp, w_b)
 
-    p = np.full_like(np.arange(9), player)
-    inp = np.concatenate((pad, inp, p == 1), axis=0)
+    p = np.full_like(np.arange(9), player) == 1
+    inp = np.concatenate((pad, inp, p), axis=0)
 
     return torch.FloatTensor(inp)
 
@@ -41,6 +41,6 @@ if __name__ == "__main__":
     draw_board(trajectory[-1])
     inp_r = rnet_input(trajectory, 1)
     print(inp_r)
-    hs = torch.randn(size=(9,))
+    hs = torch.randn(size=(16,))
     inp_d = dnet_input(hs, 4)
     print(inp_d)

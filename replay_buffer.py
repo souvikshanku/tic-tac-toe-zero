@@ -45,12 +45,12 @@ def generate_replay_buffer(
         `[state, player, improved_policy, move, reward]`.
     """
     replay_buffer = []
-    num_sims = 18
+    num_sims = 25
 
     for _ in trange(num_episodes, ascii=' >='):
         examples = []
         state = np.zeros(9)
-        trajectory = []
+        trajectory = [state]
         player = 1
 
         while evaluate(state) is None:
@@ -79,6 +79,7 @@ def generate_replay_buffer(
             ])
 
             state = make_move(state.copy(), player, action)
+            trajectory.append(state)
             player = player * -1
 
         examples = _assign_rewards(examples, evaluate(state))
@@ -102,8 +103,7 @@ def make_targets(replay_buffer: list, num_unroll_steps: int = 9) -> list:
                 player,
                 np.array([1/9] * 9),  # uniform
                 np.random.choice(9),
-                # reward
-                0
+                0  # reward ?
             ])
     return replay_buffer
 

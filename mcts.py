@@ -15,6 +15,7 @@ def mask_illegal_moves(
         if idx not in valid_moves:
             policy[idx] = 0.0
 
+    assert sum(policy) != 0.0
     return policy / sum(policy)
 
 
@@ -64,7 +65,7 @@ def init_root(
 
     policy = torch.exp(policy)[0].detach().numpy().copy()
     if noise:
-        noise = np.random.dirichlet([0.3] * len(policy))
+        noise = np.random.dirichlet([0.1] * len(policy))
     policy = noise * 0.25 + (1 - 0.25) * policy
     node.policy = mask_illegal_moves(node.state, policy)
 
@@ -94,7 +95,6 @@ def search(
         Psa = node.policy[m]
         Nsa = node.children[m].visit_count
 
-        # u = Qsa + 1 * Psa * np.sqrt(node.visit_count) / (1 + Nsa)
         c1 = 1.25
         c2 = 19652
         u = Qsa + Psa * (np.sqrt(node.visit_count) / (1 + Nsa)) * (c1 + np.log((node.visit_count + c2 + 1) / c2))  # noqa
@@ -131,10 +131,11 @@ if __name__ == "__main__":
     rnet = ReprNet()
 
     state = np.array([1, 0, 0, -1, 0, 0, 1, 0, -1])
+    trajectory = [state]
     draw_board(state)
     player = 1
 
-    inp = rnet_input(state, player)
+    inp = rnet_input(trajectory, player)
     hs = rnet.predict(inp)
     node = Node(hidden_state=hs, state=state, is_root=True, to_play=True)
     node = init_root(node, dnet, pnet)

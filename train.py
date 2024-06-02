@@ -56,7 +56,7 @@ def calc_loss(
 ) -> torch.Tensor:
     policy_loss = - torch.sum(target_p * p)
     value_loss = torch.sum((target_v - v.view(-1)) ** 2)
-    total_loss = policy_loss + value_loss
+    total_loss = (0.75 * policy_loss) + (0.25 * value_loss)
 
     return total_loss
 
@@ -76,7 +76,7 @@ def train(
         *rnet.parameters(),
         *pnet.parameters(),
         *dnet.parameters()
-    ], lr=0.001)
+    ], lr=0.003)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
     rb_size = 300

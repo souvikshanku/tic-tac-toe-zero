@@ -20,7 +20,7 @@ def _pit_nns(
     nets2: list,
     num_episodes: int = 20,
 ) -> float:
-    num_sims = 18
+    num_sims = 25
     num_wins = 0
     num_draws = 0
     win_as_O = 0
@@ -49,7 +49,7 @@ def _pit_nns(
             inp = rnet_input(trajectory, player)
             hs = rnet.predict(inp)
             node = Node(hs, state, is_root=True, to_play=True)
-            node = init_root(node, dnet, pnet)
+            node = init_root(node, dnet, pnet, True)
 
             for _ in range(num_sims):
                 path = [node]
@@ -62,23 +62,6 @@ def _pit_nns(
                 range(len(improved_policy)),
                 p=improved_policy
             )
-            # if i < num_episodes / 2:
-            #     if player == -1:
-            #         action = np.argmax(improved_policy)
-            #     else:
-            #         action = np.random.choice(
-            #             range(len(improved_policy)),
-            #             p=improved_policy
-            #         )
-
-            # else:
-            #     if player == 1:
-            #         action = np.argmax(improved_policy)
-            #     else:
-            #         action = np.random.choice(
-            #             range(len(improved_policy)),
-            #             p=improved_policy
-            #         )
 
             state = make_move(state.copy(), player, action)
             trajectory.append(state)
@@ -108,7 +91,7 @@ def learn_by_self_play(num_iters: int):
     num_games = 300
     num_episodes = 40
     num_epochs = 200
-    batch_size = 128
+    batch_size = 64
     threshold = 0.55
 
     pnet = PredNet()
@@ -171,8 +154,4 @@ if __name__ == "__main__":
     dnet = DynmNet()
     rnet = ReprNet()
 
-    dnet_t, pnet_t, rnet_t = learn_by_self_play(50)
-
-    _pit_nns([dnet, pnet, rnet], [dnet_t, pnet_t, rnet_t])
-
-    torch.save([dnet_t, pnet_t, rnet_t], "models.bin")
+    dnet_t, pnet_t, rnet_t = learn_by_self_play(num_iters=50)
